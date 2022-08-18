@@ -13,34 +13,41 @@ class MainActivity : AppCompatActivity() {
     lateinit var binding: ActivityMainBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding= ActivityMainBinding.inflate(layoutInflater)
+        binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         getPosts()
     }
 
-    fun getPosts(){
-        val retrofit=APIClient.buildApiClient((ApiInterface::class.java))
-        val request= retrofit.getPosts()
-
-        request.enqueue(object: Callback<List<Posts>>{
+    fun getPosts() {
+        val apiClient = APIClient.buildApiClient((ApiInterface::class.java))
+        val request = apiClient.getPosts()
+//Enqueue remove the long running tasks and replaces it in another seperates thread to make a request call, responses are received on this thread that's why callbacks are necessary
+        request.enqueue(object : Callback<List<Posts>> {
             override fun onResponse(call: Call<List<Posts>>, response: Response<List<Posts>>) {
-                if (response.isSuccessful){
-                    val post= response.body()!!  //Pass post to the main activity to display the posts
-                    Toast.makeText(baseContext, "Fetched ${post!!.size} post",
-                    Toast.LENGTH_LONG).show()
-                    var postsAdapter= PostsRvAdapter(baseContext, post)
-                    binding.rvPosts.layoutManager = LinearLayoutManager(baseContext)
-                    binding.rvPosts.adapter = postsAdapter
+                if (response.isSuccessful) {
+                    val posts = response.body()
+                    if (posts != null) {
+                        displayPosts(posts)
+                    }
+
 
                 }
             }
 
             override fun onFailure(call: Call<List<Posts>>, t: Throwable) {
-
+                Toast.makeText(baseContext, t.message, Toast.LENGTH_LONG).show()
             }
 
         })
-
-
     }
-}
+
+        fun displayPosts(postList: List<Posts>) {
+            binding.rvPosts.layoutManager = LinearLayoutManager(this)
+            val postsAdapter = PostsRvAdapter(postList)
+            binding.rvPosts.adapter = postsAdapter
+        }
+    }
+
+
+
+
